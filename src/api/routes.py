@@ -14,7 +14,7 @@ from flask_jwt_extended import JWTManager
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
-CORS(api, origins=["https://legendary-halibut-jj5rv9w7qqgfpq57-3000.app.github.dev/"])
+CORS(api)
 
 
 @api.route('/hello', methods=['POST', 'GET'])
