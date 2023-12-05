@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 import { Context } from "../store/appContext";
+import { Link, useNavigate } from "react-router-dom";
 import "../../styles/Register.css";
 
 export const Register = () => {
@@ -8,8 +9,8 @@ export const Register = () => {
   const [password, setPassword] = useState("");
 
   const handleClick = async (e) => {
-    e.preventDefault(); // this prevents a reload every time
-    await actions.registerUser(email, password); //this is calling the registerUser function from flux
+    e.preventDefault();
+    await actions.registerUser(email, password);
   };
 
   return (

@@ -20,7 +20,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       registerUser: async (email, password) => {
         try {
           const response = await fetch(
-            "https://legendary-halibut-jj5rv9w7qqgfpq57-3001.app.github.dev/api/register",
+            process.env.BACKEND_URL + "api/register",
             {
               method: "POST",
               headers: {
@@ -40,6 +40,28 @@ const getState = ({ getStore, getActions, setStore }) => {
           }
         } catch (error) {
           console.error("Error during registration", error);
+        }
+      },
+      loginUser: async (email, password) => {
+        try {
+          const response = await fetch(process.env.BACKEND_URL + "api/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Login successful", data);
+            setStore({ token: data.access_token });
+          } else {
+            const errorData = await response.json();
+            console.error("Login failed", errorData.msg);
+            setStore({ loginError: errorData.msg });
+          }
+        } catch (error) {
+          console.error("Error during login", error);
+          setStore({ loginError: "An error occurred during login." });
         }
       },
 
