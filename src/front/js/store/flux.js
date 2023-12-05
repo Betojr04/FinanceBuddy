@@ -2,6 +2,7 @@ const getState = ({ getStore, getActions, setStore }) => {
   return {
     store: {
       message: null,
+      token: null,
       demo: [
         {
           title: "FIRST",
@@ -53,6 +54,7 @@ const getState = ({ getStore, getActions, setStore }) => {
           if (response.ok) {
             const data = await response.json();
             console.log("Login successful", data);
+            localStorage.setItem("token", data.access_token);
             setStore({ token: data.access_token });
           } else {
             const errorData = await response.json();
@@ -63,6 +65,15 @@ const getState = ({ getStore, getActions, setStore }) => {
           console.error("Error during login", error);
           setStore({ loginError: "An error occurred during login." });
         }
+      },
+      logoutUser: () => {
+        // Remove the token from local storage or wherever it's stored
+        localStorage.removeItem("token");
+        // Update the global store
+        setStore({ token: null });
+      },
+      setToken: (token) => {
+        setStore({ token: token });
       },
 
       getMessage: async () => {

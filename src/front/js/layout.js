@@ -1,5 +1,6 @@
-import React from "react";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import React, { useEffect, useContext } from "react";
+import { BrowserRouter, Route, Routes, useNavigate } from "react-router-dom";
+import { Context } from "./store/appContext";
 import ScrollToTop from "./component/scrollToTop";
 import { BackendURL } from "./component/backendURL";
 
@@ -13,6 +14,7 @@ import injectContext from "./store/appContext";
 
 import { Navbar } from "./component/Navbar";
 import { Footer } from "./component/Footer";
+import { LoginRedirect } from "./component/LoginRedirect.js";
 
 //create your first component
 const Layout = () => {
@@ -28,6 +30,7 @@ const Layout = () => {
       <BrowserRouter basename={basename}>
         <ScrollToTop>
           <Navbar />
+          <LoginRedirect />
           <Routes>
             <Route element={<Home />} path="/" />
             <Route element={<Register />} path="/register" />

@@ -1,15 +1,22 @@
 import React, { useState, useContext } from "react";
 import { Context } from "../store/appContext.js";
+import { useNavigate } from "react-router-dom";
+
 import "../../styles/Login.css";
 
 export const Login = () => {
   const { actions, store } = useContext(Context);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await actions.loginUser(email, password);
+
+    if (store.token) {
+      navigate("/private"); // Redirect to the dashboard
+    }
   };
 
   return (
