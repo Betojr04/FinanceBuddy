@@ -6,7 +6,6 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
-plaid-python = "*"
 flask = "*"
 sqlalchemy = "==1.4.46"
 flask-sqlalchemy = "*"
@@ -19,6 +18,8 @@ gunicorn = "*"
 cloudinary = "*"
 flask-admin = "*"
 typing-extensions = "*"
+plaid = "*"
+plaid-python = "*"
 
 [requires]
 python_version = "3.10"

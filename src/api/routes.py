@@ -11,24 +11,30 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
-load_dotenv() 
-
 import os
+import plaid
+from plaid.api import plaid_api
+
+load_dotenv()
+
 client_id = os.getenv('PLAID_CLIENT_ID')
 secret = os.getenv('PLAID_SECRET')
 environment = os.getenv('PLAID_ENVIRONMENT')
 
-from plaid import Client
-
-
+# Plaid Configuration
+configuration = plaid.Configuration(
+    host=plaid.Environment.Sandbox,
+    api_key={
+        'clientId': client_id,
+        'secret': secret,
+    }
+)
+api_client = plaid.ApiClient(configuration)
+plaid_client = plaid_api.PlaidApi(api_client)
 
 api = Blueprint('api', __name__)
-
-# Allow CORS requests to this API
 CORS(api)
 
-# PLAID CONFIGURATION
-client = Client(client_id=client_id, secret=secret, environment=environment)
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
@@ -82,21 +88,22 @@ def login():
 
 
 
-# CREATING THE LINK TOKEN REQUIRED TO OPEN PLAID LINK ON FRONTEND
 @api.route('/create_link_token', methods=['POST'])
 def create_link_token():
-    response = client.LinkToken.create({
-        'user': {
-            'client_user_id': 'user_id',  
-        },
-        'client_name': 'FinanceBuddy',
-        'products': ['transactions', 'investments', 'liabilities', 'enrich' ],
-        'country_codes': ['US'],
-        'language': 'en',
-    })
-    return response
+    try:
+        request = plaid.LinkTokenCreateRequest(
+            user=plaid.LinkTokenCreateRequestUser(client_user_id='user_id'),
+            client_name='FinanceBuddy',
+            products=[plaid.Products('transactions'), plaid.Products('investments'), 
+                      plaid.Products('liabilities'), plaid.Products('enrich')],
+            country_codes=[plaid.CountryCode('US')],
+            language='en'
+        )
+        response = plaid_client.link_token_create(request)
+        return jsonify(response.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
-# THIS RECIVES THE LINK TOKEN CREATED AND TURNS INTO AN ACCESS TOKEN TO USE PLAID SERVICE
 @api.route('/exchange_public_token', methods=['POST'])
 def exchange_public_token():
     try:
@@ -104,9 +111,9 @@ def exchange_public_token():
         if not public_token:
             return jsonify({'error': 'Missing public token'}), 400
 
-        exchange_response = client.Item.public_token.exchange(public_token)
+        request = plaid.ItemPublicTokenExchangeRequest(public_token=public_token)
+        exchange_response = plaid_client.item_public_token_exchange(request)
         access_token = exchange_response['access_token']
-        # Store this access_token securely
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

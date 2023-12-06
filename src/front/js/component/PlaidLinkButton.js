@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { usePlaidLink } from "react-plaid-link";
 
-const PlaidLinkButton = () => {
+export const PlaidLinkButton = () => {
   const [linkToken, setLinkToken] = useState(null);
 
   // Fetch Link Token from Backend
@@ -33,5 +33,3 @@ const PlaidLinkButton = () => {
     </button>
   );
 };
-
-export default PlaidLinkButton;
