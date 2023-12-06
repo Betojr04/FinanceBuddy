@@ -11,7 +11,10 @@ from api.routes import api
 from api.admin import setup_admin
 from api.commands import setup_commands
 from flask_jwt_extended import JWTManager
-# from flask_cors import CORS
+from plaid import Client
+import sys
+print("Python interpreter used:", sys.executable)
+
 
 
 # from models import Person
@@ -26,7 +29,9 @@ app.url_map.strict_slashes = False
 app.config["JWT_SECRET_KEY"] = "super-secret"  # Change this!
 jwt = JWTManager(app)
 
-# CORS(app)
+# PLAID CONFIGURATION
+# client = Client(client_id='64408bd27b1b84001207f9a6', secret='eb967bd6c19b5f9b572d334b54cd15T', environment='sandbox')  
+
 
 # database condiguration
 db_url = os.getenv("DATABASE_URL")

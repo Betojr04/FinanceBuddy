@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
+plaid-python = "*"
 flask = "*"
 sqlalchemy = "==1.4.46"
 flask-sqlalchemy = "*"

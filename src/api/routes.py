@@ -10,11 +10,15 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
+from plaid import Client
 
 api = Blueprint('api', __name__)
 
 # Allow CORS requests to this API
 CORS(api)
+
+# PLAID CONFIGURATION
+client = Client(client_id='64408bd27b1b84001207f9a6', secret='eb967bd6c19b5f9b572d334b54cd15T', environment='sandbox')
 
 
 @api.route('/hello', methods=['POST', 'GET'])
@@ -66,3 +70,36 @@ def login():
     # Create JWT token
     access_token = create_access_token(identity=email)
     return jsonify(access_token=access_token), 200
+
+
+
+# CREATING THE LINK TOKEN REQUIRED TO OPEN PLAID LINK ON FRONTEND
+@api.route('/create_link_token', methods=['POST'])
+def create_link_token():
+    response = client.LinkToken.create({
+        'user': {
+            'client_user_id': 'user_id',  
+        },
+        'client_name': 'FinanceBuddy',
+        'products': ['transactions', 'investments', 'liabilities', 'enrich' ],
+        'country_codes': ['US'],
+        'language': 'en',
+    })
+    return response
+
+# THIS RECIVES THE LINK TOKEN CREATED AND TURNS INTO AN ACCESS TOKEN TO USE PLAID SERVICE
+@api.route('/exchange_public_token', methods=['POST'])
+def exchange_public_token():
+    try:
+        public_token = request.json.get('public_token')
+        if not public_token:
+            return jsonify({'error': 'Missing public token'}), 400
+
+        exchange_response = client.Item.public_token.exchange(public_token)
+        access_token = exchange_response['access_token']
+        # Store this access_token securely
+        return jsonify({'access_token': access_token}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
