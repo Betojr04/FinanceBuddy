@@ -10,7 +10,17 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+load_dotenv() 
+
+import os
+client_id = os.getenv('PLAID_CLIENT_ID')
+secret = os.getenv('PLAID_SECRET')
+environment = os.getenv('PLAID_ENVIRONMENT')
+
 from plaid import Client
+
+
 
 api = Blueprint('api', __name__)
 
@@ -18,8 +28,7 @@ api = Blueprint('api', __name__)
 CORS(api)
 
 # PLAID CONFIGURATION
-client = Client(client_id='64408bd27b1b84001207f9a6', secret='eb967bd6c19b5f9b572d334b54cd15T', environment='sandbox')
-
+client = Client(client_id=client_id, secret=secret, environment=environment)
 
 @api.route('/hello', methods=['POST', 'GET'])
 def handle_hello():
