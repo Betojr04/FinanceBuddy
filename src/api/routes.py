@@ -11,6 +11,8 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
+import json
+from plaid.model.accounts_get_request import AccountsGetRequest
 import os
 from plaid.api import plaid_api
 import plaid
@@ -18,6 +20,9 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
+
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+
 
 load_dotenv()
 
@@ -103,62 +108,43 @@ def create_link_token():
     response = plaid_client.link_token_create(request)
     return jsonify(response.to_dict()), 200
 
-
-# the OG create link token
-# @api.route('/create_link_token', methods=['POST'])
-# def create_link_token():
-#     try:
-#         print("Creating link token...")
-#         request = plaid.LinkTokenCreateRequest(
-#             user=plaid.LinkTokenCreateRequestUser(client_user_id='user.id'),
-#             client_name='FinanceBuddy',
-#             products=[plaid.Products('transactions'), plaid.Products('investments'), 
-#                       plaid.Products('liabilities'), plaid.Products('enrich')],
-#             country_codes=[plaid.CountryCode('US')],
-#             language='en'
-#         )
-#         response = plaid_client.link_token_create(request)
-#         return jsonify(response.to_dict()), 200
-#     except Exception as e:
-#         return jsonify({'error': str(e)}), 500
-
-
-
-# @api.route("/create_link_token", methods=['POST'])
-# def create_link_token():
-    
-#     user = User.find(...)
-#     client_user_id = user.id
-  
-#     request = LinkTokenCreateRequest(
-#             products=[Products("auth"), Products("transactions"),Products("investments"),Products("liabilities"),Products("enrich")],
-#             client_name="Plaid Test App",
-#             country_codes=[CountryCode('US'), CountryCode('CA')],
-#             redirect_uri='https://domainname.com/oauth-page.html',
-#             language='en',
-#             webhook='https://webhook.example.com',
-#             user=LinkTokenCreateRequestUser(
-#                 client_user_id=client_user_id
-#             )
-#         )
-#     response = client.link_token_create(request)
-    
-#     return jsonify(response.to_dict())
-
+# to exchange the public token in order to be able to access the api call
 @api.route('/exchange_public_token', methods=['POST'])
 def exchange_public_token():
+    global access_token, item_id
+    public_token = request.json['public_token']  # Retrieve the public_token from the request body
+    exchange_request = ItemPublicTokenExchangeRequest(
+        public_token=public_token
+    )
     try:
-        public_token = request.json.get('public_token')
-        if not public_token:
-            return jsonify({'error': 'Missing public token'}), 400
-
-        exchange_request = plaid.ItemPublicTokenExchangeRequest(public_token=public_token)
         exchange_response = plaid_client.item_public_token_exchange(exchange_request)
         access_token = exchange_response['access_token']
-        # Here you can store the access_token in your database associated with the user
-        return jsonify({'access_token': access_token}), 200
+        item_id = exchange_response['item_id']
+        # You should save the access_token and item_id in a persistent database associated with the user
+        return jsonify({'public_token_exchange': 'complete', 'access_token': access_token, 'item_id': item_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# MAKING THE API CALL NOW TO RETRIEVE FIANCIAL DATA:
+@api.route('/accounts', methods=['GET'])
+def get_accounts():
+    # Access the global access_token (or retrieve it from where it's stored)
+    global access_token
+
+    try:
+        request = AccountsGetRequest(access_token=access_token)
+        accounts_response = plaid_client.accounts_get(request)
+        return jsonify(accounts_response.to_dict())
+    except plaid.ApiException as e:
+        response = json.loads(e.body)
+        return jsonify({
+            'error': {
+                'status_code': e.status,
+                'display_message': response['error_message'],
+                'error_code': response['error_code'],
+                'error_type': response['error_type']
+            }
+        }), 400
 
 

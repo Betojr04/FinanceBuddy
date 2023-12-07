@@ -3,7 +3,7 @@ import { usePlaidLink } from "react-plaid-link";
 import { Context } from "../store/appContext.js";
 
 export const PlaidLinkButton = () => {
-  const { dispatch } = useContext(Context); // Use dispatch from your context
+  const { actions } = useContext(Context);
   const [linkToken, setLinkToken] = useState(null);
 
   // Fetch Link Token from Backend
@@ -48,19 +48,13 @@ export const PlaidLinkButton = () => {
         const data = await response.json();
         console.log("Access token:", data.access_token);
 
-        // Dispatch the new state to your context
-        dispatch({
-          type: "SET_STATE",
-          state: {
-            accessToken: data.access_token,
-            // ...other state updates as necessary
-          },
-        });
+        // Use setAccessToken action from your flux actions
+        actions.setAccessToken(data.access_token);
       } catch (error) {
         console.error("Error exchanging public token:", error);
       }
     },
-    [dispatch]
+    [actions]
   );
 
   const config = { token: linkToken, onSuccess };
