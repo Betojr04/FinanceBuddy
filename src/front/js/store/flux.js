@@ -3,6 +3,7 @@ const getState = ({ getStore, getActions, setStore }) => {
     store: {
       message: null,
       token: null,
+      accessToken: null,
       demo: [
         {
           title: "FIRST",
@@ -74,6 +75,38 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
       setToken: (token) => {
         setStore({ token: token });
+      },
+      exchangePublicToken: async (publicToken) => {
+        try {
+          const response = await fetch(
+            `${process.env.BACKEND_URL}api/exchange_public_token`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ public_token: publicToken }),
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log("Access token exchange successful", data);
+            setStore({ accessToken: data.access_token });
+          } else {
+            const errorData = await response.json();
+            console.error("Access token exchange failed", errorData);
+          }
+        } catch (error) {
+          console.error("Error during access token exchange", error);
+        }
+      },
+      // Set Plaid's access token
+      setAccessToken: (accessToken) => {
+        setStore({ accessToken });
+      },
+
+      // Clear Plaid's access token on logout or when needed
+      clearAccessToken: () => {
+        setStore({ accessToken: null });
       },
 
       getMessage: async () => {

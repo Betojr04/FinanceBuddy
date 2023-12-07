@@ -12,8 +12,12 @@ from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 import os
-import plaid
 from plaid.api import plaid_api
+import plaid
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.products import Products
+from plaid.model.country_code import CountryCode
 
 load_dotenv()
 
@@ -87,22 +91,59 @@ def login():
     return jsonify(access_token=access_token), 200
 
 
-
 @api.route('/create_link_token', methods=['POST'])
 def create_link_token():
-    try:
-        request = plaid.LinkTokenCreateRequest(
-            user=plaid.LinkTokenCreateRequestUser(client_user_id='user_id'),
-            client_name='FinanceBuddy',
-            products=[plaid.Products('transactions'), plaid.Products('investments'), 
-                      plaid.Products('liabilities'), plaid.Products('enrich')],
-            country_codes=[plaid.CountryCode('US')],
-            language='en'
-        )
-        response = plaid_client.link_token_create(request)
-        return jsonify(response.to_dict()), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    request = LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id='user.id'),
+        client_name='FinanceBuddy',
+        products=[Products("transactions"), Products("investments")],
+        country_codes=[CountryCode('US')],
+        language='en'
+    )
+    response = plaid_client.link_token_create(request)
+    return jsonify(response.to_dict()), 200
+
+
+# the OG create link token
+# @api.route('/create_link_token', methods=['POST'])
+# def create_link_token():
+#     try:
+#         print("Creating link token...")
+#         request = plaid.LinkTokenCreateRequest(
+#             user=plaid.LinkTokenCreateRequestUser(client_user_id='user.id'),
+#             client_name='FinanceBuddy',
+#             products=[plaid.Products('transactions'), plaid.Products('investments'), 
+#                       plaid.Products('liabilities'), plaid.Products('enrich')],
+#             country_codes=[plaid.CountryCode('US')],
+#             language='en'
+#         )
+#         response = plaid_client.link_token_create(request)
+#         return jsonify(response.to_dict()), 200
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+
+
+
+# @api.route("/create_link_token", methods=['POST'])
+# def create_link_token():
+    
+#     user = User.find(...)
+#     client_user_id = user.id
+  
+#     request = LinkTokenCreateRequest(
+#             products=[Products("auth"), Products("transactions"),Products("investments"),Products("liabilities"),Products("enrich")],
+#             client_name="Plaid Test App",
+#             country_codes=[CountryCode('US'), CountryCode('CA')],
+#             redirect_uri='https://domainname.com/oauth-page.html',
+#             language='en',
+#             webhook='https://webhook.example.com',
+#             user=LinkTokenCreateRequestUser(
+#                 client_user_id=client_user_id
+#             )
+#         )
+#     response = client.link_token_create(request)
+    
+#     return jsonify(response.to_dict())
 
 @api.route('/exchange_public_token', methods=['POST'])
 def exchange_public_token():
@@ -111,11 +152,13 @@ def exchange_public_token():
         if not public_token:
             return jsonify({'error': 'Missing public token'}), 400
 
-        request = plaid.ItemPublicTokenExchangeRequest(public_token=public_token)
-        exchange_response = plaid_client.item_public_token_exchange(request)
+        exchange_request = plaid.ItemPublicTokenExchangeRequest(public_token=public_token)
+        exchange_response = plaid_client.item_public_token_exchange(exchange_request)
         access_token = exchange_response['access_token']
+        # Here you can store the access_token in your database associated with the user
         return jsonify({'access_token': access_token}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 
