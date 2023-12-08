@@ -4,6 +4,7 @@ const getState = ({ getStore, getActions, setStore }) => {
       message: null,
       token: null,
       accessToken: null,
+      accounts: null,
       demo: [
         {
           title: "FIRST",
@@ -18,7 +19,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       ],
     },
     actions: {
-      // Use getActions to call a function within a fuction
+      /**
+       *
+       * THIS IS FOR REGISTERING THE USER
+       *
+       */
       registerUser: async (email, password) => {
         try {
           const response = await fetch(
@@ -44,6 +49,11 @@ const getState = ({ getStore, getActions, setStore }) => {
           console.error("Error during registration", error);
         }
       },
+      /**
+       *
+       * THIS IS FOR LOGGING IN THE USER
+       *
+       */
       loginUser: async (email, password) => {
         try {
           const response = await fetch(process.env.BACKEND_URL + "api/login", {
@@ -67,6 +77,11 @@ const getState = ({ getStore, getActions, setStore }) => {
           setStore({ loginError: "An error occurred during login." });
         }
       },
+      /**
+       *
+       * THIS IS FOR LOGGING OUT THE USER
+       *
+       */
       logoutUser: () => {
         // Remove the token from local storage or wherever it's stored
         localStorage.removeItem("token");
@@ -76,6 +91,11 @@ const getState = ({ getStore, getActions, setStore }) => {
       setToken: (token) => {
         setStore({ token: token });
       },
+      /**
+       *
+       * EXCHANGING THE PUBLIC TOKEN THAT WAS CREATED TO BE ABLE TO FETCH THE API FOR BANKING DETIALS
+       *
+       */
       exchangePublicToken: async (publicToken) => {
         try {
           const response = await fetch(
@@ -108,7 +128,43 @@ const getState = ({ getStore, getActions, setStore }) => {
       clearAccessToken: () => {
         setStore({ accessToken: null });
       },
+      /**
+       *
+       * THIS IS FOR FETCHING THE USERS ACCOUNT DATA
+       *
+       */
+      fetchAccounts: async () => {
+        try {
+          const accessToken = getStore().accessToken;
+          if (!accessToken) {
+            throw new Error("Access token not available");
+          }
+          const response = await fetch(
+            `${process.env.BACKEND_URL}api/accounts`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
 
+          if (!response.ok) {
+            throw new Error("Failed to fetch account data");
+          }
+
+          const data = await response.json();
+          setStore({ accounts: data.accounts });
+        } catch (error) {
+          console.error("Error fetching account data:", error);
+        }
+      },
+      /**
+       *
+       * THESE TWO BELOW ARE BOILERPLATE ACTIONS, NOT APART OF PERSONAL FINANCE APPLICATION
+       *
+       */
       getMessage: async () => {
         try {
           // fetching data from the backend

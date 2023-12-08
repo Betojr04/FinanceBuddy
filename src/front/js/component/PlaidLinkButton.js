@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useContext } from "react";
 import { usePlaidLink } from "react-plaid-link";
 import { Context } from "../store/appContext.js";
+import "../../styles/PlaidLinkButton.css";
 
 export const PlaidLinkButton = () => {
   const { actions } = useContext(Context);
@@ -62,7 +63,11 @@ export const PlaidLinkButton = () => {
   const { open, ready } = usePlaidLink(config);
 
   return (
-    <button onClick={() => open()} disabled={!ready}>
+    <button
+      className="plaid-link-button"
+      onClick={() => open()}
+      disabled={!ready}
+    >
       Connect a Bank Account
     </button>
   );

@@ -1,0 +1,20 @@
+.account-card {
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  padding: 20px;
+  margin: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.account-info h3 {
+  margin: 0;
+  color: #333;
+}
+
+.account-info p,
+.account-balance p {
+  margin: 5px 0;
+  color: #666;
+}

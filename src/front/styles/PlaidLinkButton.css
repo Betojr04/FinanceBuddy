@@ -1,0 +1,24 @@
+.plaid-link-button {
+  background-color: #4caf50; /* Green background */
+  color: white; /* White text */
+  padding: 15px 30px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+
+  display: inline-block; /* Centering the button if needed */
+  margin: 10px;
+  text-decoration: none; /* Removing underline for <a> elements */
+}
+
+.plaid-link-button:hover {
+  background-color: #45a049; /* Darker green background on hover */
+  transform: scale(1.05); /* Slightly increase size on hover */
+}
+
+.plaid-link-button:disabled {
+  background-color: #ccc; /* Gray background when disabled */
+  cursor: not-allowed;
+}
