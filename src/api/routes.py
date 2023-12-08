@@ -21,6 +21,10 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 
+from plaid.model.transactions_get_request import TransactionsGetRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
+from plaid.model.liabilities_get_request import LiabilitiesGetRequest
+
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 
 
@@ -126,8 +130,11 @@ def exchange_public_token():
         return jsonify({'error': str(e)}), 500
 
 
-# MAKING THE API CALL NOW TO RETRIEVE FIANCIAL DATA:
+"""
+ROUTE FOR GETTING ACCOUNTS
+"""
 @api.route('/accounts', methods=['GET'])
+@jwt_required()
 def get_accounts():
     # Access the global access_token (or retrieve it from where it's stored)
     global access_token
@@ -146,5 +153,62 @@ def get_accounts():
                 'error_type': response['error_type']
             }
         }), 400
+
+"""
+ROUTE FOR TRANSACTIONS
+"""
+@api.route('/transactions', methods=['GET'])
+@jwt_required()
+def get_transactions():
+    # Retrieve the access token stored in association with the user
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(email=current_user).first()
+    access_token = user.plaid_access_token  # Assuming you store it here
+
+    try:
+        request = plaid.TransactionsGetRequest(
+            access_token=access_token,
+            start_date='2020-01-01',  # Adjust dates as needed
+            end_date='2023-12-31'
+        )
+        response = plaid_client.transactions_get(request)
+        return jsonify(response.to_dict()), 200
+    except plaid.ApiException as e:
+        response = json.loads(e.body)
+        return jsonify({
+            'error': {
+                'status_code': e.status,
+                'display_message': response['error_message'],
+                'error_code': response['error_code'],
+                'error_type': response['error_type']
+            }
+        }), 400
+
+
+"""
+ROUTE FOR LIABILITIES
+"""
+@api.route('/liabilities', methods=['GET'])
+@jwt_required()
+def get_liabilities():
+    current_user = get_jwt_identity()
+    user = User.query.filter_by(email=current_user).first()
+    access_token = user.plaid_access_token
+
+    try:
+        request = plaid.LiabilitiesGetRequest(access_token=access_token)
+        response = plaid_client.liabilities_get(request)
+        return jsonify(response.to_dict()), 200
+    except plaid.ApiException as e:
+        response = json.loads(e.body)
+        return jsonify({
+            'error': {
+                'status_code': e.status,
+                'display_message': response['error_message'],
+                'error_code': response['error_code'],
+                'error_type': response['error_type']
+            }
+        }), 400
+
 
 

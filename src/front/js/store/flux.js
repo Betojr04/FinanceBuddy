@@ -163,6 +163,71 @@ const getState = ({ getStore, getActions, setStore }) => {
       },
       /**
        *
+       * THIS IS FOR FETCHING TRANSACTIONS
+       *
+       */
+      fetchTransactions: async () => {
+        try {
+          const accessToken = getStore().accessToken;
+          if (!accessToken) {
+            throw new Error("Access token not available");
+          }
+          const response = await fetch(
+            `${process.env.BACKEND_URL}api/transactions`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch transactions");
+          }
+
+          const data = await response.json();
+          setStore({ transactions: data.transactions });
+        } catch (error) {
+          console.error("Error fetching transactions:", error);
+        }
+      },
+      /**
+       *
+       * THIS IS FOR FETCHING LIABILITIES
+       *
+       */
+      fetchLiabilities: async () => {
+        try {
+          const accessToken = getStore().accessToken;
+          if (!accessToken) {
+            throw new Error("Access token not available");
+          }
+          const response = await fetch(
+            `${process.env.BACKEND_URL}api/liabilities`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to fetch liabilities");
+          }
+
+          const data = await response.json();
+          setStore({ liabilities: data.liabilities });
+        } catch (error) {
+          console.error("Error fetching liabilities:", error);
+        }
+      },
+
+      /**
+       *
        * THESE TWO BELOW ARE BOILERPLATE ACTIONS, NOT APART OF PERSONAL FINANCE APPLICATION
        *
        */
