@@ -119,9 +119,10 @@ const getState = ({ getStore, getActions, setStore }) => {
           console.error("Error during access token exchange", error);
         }
       },
-      // Set Plaid's access token
-      setAccessToken: (accessToken) => {
+      // Set Plaid's access token and fetch accounts
+      setAccessToken: async (accessToken) => {
         setStore({ accessToken });
+        await getActions().fetchAccounts();
       },
 
       // Clear Plaid's access token on logout or when needed
