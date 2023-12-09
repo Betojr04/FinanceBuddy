@@ -21,9 +21,9 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 
-from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.transactions_sync_request import TransactionsSyncRequest
-from plaid.model.liabilities_get_request import LiabilitiesGetRequest
+# from plaid.model.transactions_get_request import TransactionsGetRequest
+# from plaid.model.transactions_sync_request import TransactionsSyncRequest
+# from plaid.model.liabilities_get_request import LiabilitiesGetRequest
 
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 
@@ -134,7 +134,6 @@ def exchange_public_token():
 ROUTE FOR GETTING ACCOUNTS
 """
 @api.route('/accounts', methods=['GET'])
-@jwt_required()
 def get_accounts():
     # Access the global access_token (or retrieve it from where it's stored)
     global access_token
