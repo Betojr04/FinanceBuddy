@@ -5,6 +5,10 @@ const getState = ({ getStore, getActions, setStore }) => {
       token: null,
       accessToken: null,
       accounts: null,
+      transactions: null,
+      liabilities: null,
+      transactionsError: null,
+      liabilitiesError: null,
       demo: [
         {
           title: "FIRST",
@@ -184,13 +188,17 @@ const getState = ({ getStore, getActions, setStore }) => {
           );
 
           if (!response.ok) {
-            throw new Error("Failed to fetch transactions");
+            const errorData = await response.json();
+            console.error("Error fetching transactions:", errorData);
+            setStore({ transactionsError: errorData });
+            return; // Early return on error
           }
 
           const data = await response.json();
           setStore({ transactions: data.transactions });
         } catch (error) {
           console.error("Error fetching transactions:", error);
+          setStore({ transactionsError: error.message });
         }
       },
       /**
@@ -216,13 +224,17 @@ const getState = ({ getStore, getActions, setStore }) => {
           );
 
           if (!response.ok) {
-            throw new Error("Failed to fetch liabilities");
+            const errorData = await response.json();
+            console.error("Error fetching liabilities:", errorData);
+            setStore({ liabilitiesError: errorData });
+            return; // Early return on error
           }
 
           const data = await response.json();
           setStore({ liabilities: data.liabilities });
         } catch (error) {
           console.error("Error fetching liabilities:", error);
+          setStore({ liabilitiesError: error.message });
         }
       },
 

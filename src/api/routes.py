@@ -10,6 +10,7 @@ from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import JWTManager
+import datetime
 from dotenv import load_dotenv
 import json
 from plaid.model.accounts_get_request import AccountsGetRequest
@@ -21,9 +22,10 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 
-# from plaid.model.transactions_get_request import TransactionsGetRequest
-# from plaid.model.transactions_sync_request import TransactionsSyncRequest
-# from plaid.model.liabilities_get_request import LiabilitiesGetRequest
+from plaid.model.transactions_get_request import TransactionsGetRequest
+from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
+from plaid.model.liabilities_get_request import LiabilitiesGetRequest
+
 
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 
@@ -164,11 +166,15 @@ def get_transactions():
     user = User.query.filter_by(email=current_user).first()
     access_token = user.plaid_access_token  # Assuming you store it here
 
+    # Set the date range for the transactions you want to retrieve
+    start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
+    end_date = datetime.datetime.now().strftime('%Y-%m-%d')
+
     try:
-        request = plaid.TransactionsGetRequest(
+        request = TransactionsGetRequest(
             access_token=access_token,
-            start_date='2020-01-01',  # Adjust dates as needed
-            end_date='2023-12-31'
+            start_date=start_date,
+            end_date=end_date
         )
         response = plaid_client.transactions_get(request)
         return jsonify(response.to_dict()), 200
@@ -192,10 +198,10 @@ ROUTE FOR LIABILITIES
 def get_liabilities():
     current_user = get_jwt_identity()
     user = User.query.filter_by(email=current_user).first()
-    access_token = user.plaid_access_token
+    access_token = user.plaid_access_token  # Assuming you store it here
 
     try:
-        request = plaid.LiabilitiesGetRequest(access_token=access_token)
+        request = LiabilitiesGetRequest(access_token=access_token)
         response = plaid_client.liabilities_get(request)
         return jsonify(response.to_dict()), 200
     except plaid.ApiException as e:
