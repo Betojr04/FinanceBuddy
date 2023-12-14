@@ -170,14 +170,31 @@ def get_transactions():
     start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
     end_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
+    transactions = []
     try:
+        # Initial request
         request = TransactionsGetRequest(
             access_token=access_token,
             start_date=start_date,
             end_date=end_date
         )
         response = plaid_client.transactions_get(request)
-        return jsonify(response.to_dict()), 200
+        transactions.extend(response.to_dict()['transactions'])
+
+        # Paginate to fetch all transactions
+        while len(transactions) < response.to_dict()['total_transactions']:
+            pagination_request = TransactionsGetRequest(
+                access_token=access_token,
+                start_date=start_date,
+                end_date=end_date,
+                options=TransactionsGetRequestOptions(
+                    offset=len(transactions)
+                )
+            )
+            pagination_response = plaid_client.transactions_get(pagination_request)
+            transactions.extend(pagination_response.to_dict()['transactions'])
+
+        return jsonify({'transactions': transactions}), 200
     except plaid.ApiException as e:
         response = json.loads(e.body)
         return jsonify({
@@ -190,6 +207,7 @@ def get_transactions():
         }), 400
 
 
+
 """
 ROUTE FOR LIABILITIES
 """
@@ -198,7 +216,10 @@ ROUTE FOR LIABILITIES
 def get_liabilities():
     current_user = get_jwt_identity()
     user = User.query.filter_by(email=current_user).first()
-    access_token = user.plaid_access_token  # Assuming you store it here
+    if not user or not user.plaid_access_token:
+        return jsonify({'error': 'User or access token not found'}), 404
+
+    access_token = user.plaid_access_token
 
     try:
         request = LiabilitiesGetRequest(access_token=access_token)
@@ -213,7 +234,8 @@ def get_liabilities():
                 'error_code': response['error_code'],
                 'error_type': response['error_type']
             }
-        }), 400
+        }), e.status
+
 
 
 
