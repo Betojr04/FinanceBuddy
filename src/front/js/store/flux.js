@@ -5,10 +5,6 @@ const getState = ({ getStore, getActions, setStore }) => {
       token: null,
       accessToken: null,
       accounts: null,
-      transactions: null,
-      liabilities: null,
-      transactionsError: null,
-      liabilitiesError: null,
       demo: [
         {
           title: "FIRST",
@@ -163,83 +159,6 @@ const getState = ({ getStore, getActions, setStore }) => {
           setStore({ accounts: data.accounts });
         } catch (error) {
           console.error("Error fetching account data:", error);
-        }
-      },
-
-      /**
-       * THIS IS FOR FETCHING TRANSACTIONS
-       *
-       */
-      fetchTransactions: async () => {
-        const store = getStore();
-        const accessToken = store.accessToken;
-        if (!accessToken) {
-          console.error("Access token not available");
-          setStore({ transactionsError: "Access token not available" });
-          return;
-        }
-        try {
-          const response = await fetch(
-            `${process.env.BACKEND_URL}api/transactions`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error fetching transactions:", errorData);
-            setStore({ transactionsError: errorData });
-            return;
-          }
-
-          const data = await response.json();
-          setStore({ transactions: data.transactions });
-        } catch (error) {
-          console.error("Error fetching transactions:", error);
-          setStore({ transactionsError: error.message });
-        }
-      },
-      /**
-       * THIS IS FOR FETCHING LIABILITIES
-       *
-       */
-      fetchLiabilities: async () => {
-        const store = getStore();
-        const accessToken = store.accessToken;
-        if (!accessToken) {
-          console.error("Access token not available");
-          setStore({ liabilitiesError: "Access token not available" });
-          return;
-        }
-        try {
-          const response = await fetch(
-            `${process.env.BACKEND_URL}api/liabilities`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
-          );
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            console.error("Error fetching liabilities:", errorData);
-            setStore({ liabilitiesError: errorData });
-            return;
-          }
-
-          const data = await response.json();
-          setStore({ liabilities: data.liabilities });
-        } catch (error) {
-          console.error("Error fetching liabilities:", error);
-          setStore({ liabilitiesError: error.message });
         }
       },
 

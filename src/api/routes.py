@@ -3,7 +3,7 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 """
 from flask import Flask, request, jsonify, url_for, Blueprint
 from werkzeug.security import generate_password_hash, check_password_hash
-from api.models import db, User
+from api.models import db, User, TransactionCursor, Transaction
 from api.utils import generate_sitemap, APIException
 from flask_cors import CORS
 from flask_jwt_extended import create_access_token
@@ -22,9 +22,10 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.country_code import CountryCode
 
-from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
-from plaid.model.liabilities_get_request import LiabilitiesGetRequest
+from plaid.model.transactions_sync_request import TransactionsSyncRequest
+
+
+
 
 
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
@@ -155,86 +156,82 @@ def get_accounts():
             }
         }), 400
 
-"""
-ROUTE FOR TRANSACTIONS
-"""
-@api.route('/transactions', methods=['GET'])
-@jwt_required()
-def get_transactions():
-    # Retrieve the access token stored in association with the user
-    current_user = get_jwt_identity()
-    user = User.query.filter_by(email=current_user).first()
-    access_token = user.plaid_access_token  # Assuming you store it here
 
-    # Set the date range for the transactions you want to retrieve
-    start_date = (datetime.datetime.now() - datetime.timedelta(days=30)).strftime('%Y-%m-%d')
-    end_date = datetime.datetime.now().strftime('%Y-%m-%d')
 
-    transactions = []
-    try:
-        # Initial request
-        request = TransactionsGetRequest(
+"""
+HELPER FUNCTION FOR TRANSACTION SYNC
+"""
+def sync_transactions_with_plaid(access_token, cursor):
+    added = []
+    modified = []
+    removed = []
+    has_more = True
+
+    while has_more:
+        request = TransactionsSyncRequest(
             access_token=access_token,
-            start_date=start_date,
-            end_date=end_date
+            cursor=cursor,
         )
-        response = plaid_client.transactions_get(request)
-        transactions.extend(response.to_dict()['transactions'])
+        response = plaid_client.transactions_sync(request)
 
-        # Paginate to fetch all transactions
-        while len(transactions) < response.to_dict()['total_transactions']:
-            pagination_request = TransactionsGetRequest(
-                access_token=access_token,
-                start_date=start_date,
-                end_date=end_date,
-                options=TransactionsGetRequestOptions(
-                    offset=len(transactions)
-                )
-            )
-            pagination_response = plaid_client.transactions_get(pagination_request)
-            transactions.extend(pagination_response.to_dict()['transactions'])
+        added.extend(response['added'])
+        modified.extend(response['modified'])
+        removed.extend(response['removed'])
 
-        return jsonify({'transactions': transactions}), 200
-    except plaid.ApiException as e:
-        response = json.loads(e.body)
-        return jsonify({
-            'error': {
-                'status_code': e.status,
-                'display_message': response['error_message'],
-                'error_code': response['error_code'],
-                'error_type': response['error_type']
-            }
-        }), 400
+        has_more = response['has_more']
+        cursor = response['next_cursor']
 
-
+    return added, modified, removed, cursor
 
 """
-ROUTE FOR LIABILITIES
+ROUTE FOR TRANSACTION SYNC
 """
-@api.route('/liabilities', methods=['GET'])
+@api.route('/sync_transactions', methods=['GET'])
 @jwt_required()
-def get_liabilities():
+def sync_transactions():
     current_user = get_jwt_identity()
     user = User.query.filter_by(email=current_user).first()
     if not user or not user.plaid_access_token:
-        return jsonify({'error': 'User or access token not found'}), 404
-
-    access_token = user.plaid_access_token
+        return jsonify({'error': 'Access token or item not found'}), 404
 
     try:
-        request = LiabilitiesGetRequest(access_token=access_token)
-        response = plaid_client.liabilities_get(request)
-        return jsonify(response.to_dict()), 200
-    except plaid.ApiException as e:
-        response = json.loads(e.body)
-        return jsonify({
-            'error': {
-                'status_code': e.status,
-                'display_message': response['error_message'],
-                'error_code': response['error_code'],
-                'error_type': response['error_type']
-            }
-        }), e.status
+        cursor = get_latest_cursor_or_none(user.plaid_item_id)
+        added, modified, removed, new_cursor = sync_transactions_with_plaid(plaid_client, user.plaid_access_token, cursor)
+
+        apply_updates(user.plaid_item_id, added, modified, removed, new_cursor)
+        return jsonify({'message': 'Transactions synced successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+"""
+ALL THESE ARE RELATED TO THE TRANSACTION SYNC REQUEST
+"""
+def get_latest_cursor_or_none(item_id):
+    # Assuming you have a model named 'TransactionCursor' that stores your cursors
+    cursor_record = TransactionCursor.query.filter_by(item_id=item_id).order_by(TransactionCursor.created_at.desc()).first()
+    return cursor_record.cursor if cursor_record else None
+
+def apply_updates(item_id, added, modified, removed, cursor):
+    # Handle added transactions
+    for transaction in added:
+        new_transaction = Transaction(transaction_id=transaction['transaction_id'], item_id=item_id, **transaction)
+        db.session.add(new_transaction)
+
+    # Handle modified transactions
+    for transaction in modified:
+        Transaction.query.filter_by(transaction_id=transaction['transaction_id']).update(transaction)
+
+    # Handle removed transactions
+    for transaction_id in removed:
+        Transaction.query.filter_by(transaction_id=transaction_id).delete()
+
+    # Update the cursor
+    new_cursor = TransactionCursor(item_id=item_id, cursor=cursor)
+    db.session.add(new_cursor)
+
+    db.session.commit()
+
 
 
 
